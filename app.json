@@ -1,0 +1,7 @@
+{
+  "name": "ManyWho Identity Service",
+  "description": "A service that offers a very basic identity provider for your ManyWho flows, giving support for authentication and a tenant-specific user and group directory",
+  "repository": "https://github.com/manywho/service-identity",
+  "logo": "https://s3.amazonaws.com/manywho-service-assets/icons/service-identity.png",
+  "keywords": ["manywho", "identity", "user", "group", "plugin", "workflow"]
+}
