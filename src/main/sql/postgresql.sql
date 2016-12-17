@@ -14,7 +14,13 @@ CREATE TABLE memberships
 (
   user_id uuid NOT NULL,
   group_id uuid NOT NULL,
-  CONSTRAINT pk_memberships PRIMARY KEY (user_id, group_id)
+  CONSTRAINT pk_memberships PRIMARY KEY (user_id, group_id),
+  CONSTRAINT fk_memberships_group_id FOREIGN KEY (group_id)
+      REFERENCES public.groups (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT fk_memberships_user_id FOREIGN KEY (user_id)
+      REFERENCES public.users (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
 CREATE TABLE users
