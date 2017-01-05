@@ -1,73 +1,82 @@
 package com.manywho.services.identity.users;
 
-import com.google.inject.persist.Transactional;
 import com.manywho.sdk.api.run.elements.type.ListFilter;
 import com.manywho.sdk.services.database.FilterHelper;
 import com.manywho.sdk.services.utils.UUIDs;
+import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.groups.Group;
 import com.manywho.services.identity.groups.GroupTable;
-import com.manywho.services.identity.jpa.JpaQueryFactory;
+import com.manywho.services.identity.jpa.JpaFactory;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPADeleteClause;
 import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UserRepository {
-    private final JpaQueryFactory queryFactory;
-    private final EntityManager entityManager;
+    private final JpaFactory jpaFactory;
     private final FilterHelper filterHelper;
 
     @Inject
-    public UserRepository(JpaQueryFactory queryFactory, EntityManager entityManager, FilterHelper filterHelper) {
-        this.queryFactory = queryFactory;
-        this.entityManager = entityManager;
+    public UserRepository(JpaFactory jpaFactory, FilterHelper filterHelper) {
+        this.jpaFactory = jpaFactory;
         this.filterHelper = filterHelper;
     }
 
-    @Transactional
-    public void create(UUID tenant, User user) {
+    public void create(ServiceConfiguration configuration, User user) {
+        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+
         UserTable userTable = new UserTable();
         userTable.setEmail(user.getEmail());
         userTable.setFirstName(user.getFirstName());
         userTable.setId(user.getId());
         userTable.setLastName(user.getLastName());
-        userTable.setTenantId(tenant);
 
         for (Group group : user.getGroups()) {
             userTable.getGroups().add(entityManager.find(GroupTable.class, group.getId()));
         }
 
+        EntityTransaction transaction = entityManager.getTransaction();
+        transaction.begin();
+
         entityManager.persist(userTable);
         entityManager.flush();
+
+        transaction.commit();
     }
 
-    @Transactional
-    public void delete(UUID tenant, User user) {
+    public void delete(ServiceConfiguration configuration, User user) {
+        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+
         QUserTable table = QUserTable.userTable;
 
-        JPADeleteClause deleteClause = new JPADeleteClause(entityManager, table);
+        EntityTransaction transaction = entityManager.getTransaction();
+        transaction.begin();
 
-        deleteClause.where(table.tenantId.eq(tenant))
-                .where(table.id.eq(user.getId()));
+        new JPADeleteClause(entityManager, table)
+                .where(table.id.eq(user.getId()))
+                .execute();
 
-        deleteClause.execute();
+        transaction.commit();
     }
 
-    public Boolean existsByEmail(UUID tenant, String email) {
+    public Boolean existsByEmail(ServiceConfiguration configuration, String email) {
+        JPAQueryFactory queryFactory = jpaFactory.createQueryFactory(configuration);
+
         QUserTable table = QUserTable.userTable;
 
         JPAQuery<Boolean> query = queryFactory.select(
                 queryFactory.select(Expressions.constant(1))
                         .from(table)
-                        .where(table.tenantId.eq(tenant))
                         .where(table.email.eq(email))
                         .exists()
         ).from(table);
@@ -75,11 +84,10 @@ public class UserRepository {
         return query.fetchOne();
     }
 
-    public List<User> findAllByTenant(UUID tenant, ListFilter filter) {
+    public List<User> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
         QUserTable userTable = QUserTable.userTable;
 
-        JPAQuery<UserTable> query = queryFactory.selectFrom(userTable)
-                .where(userTable.tenantId.eq(tenant));
+        JPAQuery<UserTable> query = jpaFactory.createQueryFactory(configuration).selectFrom(userTable);
 
         // If we're given a property to order by, the we'll find it in the type and order the query by it
         if (filter.hasOrderByPropertyDeveloperName()) {
@@ -132,29 +140,33 @@ public class UserRepository {
                 .collect(Collectors.toList());
     }
 
-    public List<UUID> findGroups(UUID user) {
+    public List<UUID> findGroups(ServiceConfiguration configuration, UUID user) {
         QUserTable table = QUserTable.userTable;
 
-        JPAQuery<UUID> query = queryFactory.select(table.groups.any().id)
+        JPAQuery<UUID> query = jpaFactory.createQueryFactory(configuration).select(table.groups.any().id)
                 .from(table)
                 .where(table.id.eq(user));
 
         return query.fetch();
     }
 
-    @Transactional
-    public void update(UUID tenant, User user) {
+    public void update(ServiceConfiguration configuration, User user) {
+        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+
         QUserTable table = QUserTable.userTable;
 
-        JPAUpdateClause updateClause = new JPAUpdateClause(entityManager, table);
-
-        updateClause.set(table.firstName, user.getFirstName())
+        JPAUpdateClause updateClause = new JPAUpdateClause(entityManager, table)
+                .set(table.firstName, user.getFirstName())
                 .set(table.lastName, user.getLastName())
                 .set(table.email, user.getEmail())
                 .set(table.password, user.getPassword())
-                .where(table.tenantId.eq(tenant))
                 .where(table.id.eq(user.getId()));
 
+        EntityTransaction transaction = entityManager.getTransaction();
+        transaction.begin();
+
         updateClause.execute();
+
+        transaction.commit();
     }
 }

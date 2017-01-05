@@ -6,11 +6,13 @@ import com.manywho.sdk.api.run.elements.config.Group;
 import com.manywho.sdk.api.run.elements.type.ObjectDataRequest;
 import com.manywho.sdk.api.run.elements.type.ObjectDataResponse;
 import com.manywho.sdk.api.security.AuthenticatedWho;
+import com.manywho.sdk.services.configuration.ConfigurationParser;
 import com.manywho.sdk.services.types.TypeBuilder;
 import com.manywho.sdk.services.types.system.$User;
 import com.manywho.sdk.services.types.system.AuthorizationAttribute;
 import com.manywho.sdk.services.types.system.AuthorizationGroup;
 import com.manywho.sdk.services.types.system.AuthorizationUser;
+import com.manywho.services.identity.ServiceConfiguration;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -19,16 +21,20 @@ import java.util.stream.Collectors;
 
 public class AuthorizationManager {
     private final TypeBuilder typeBuilder;
+    private final ConfigurationParser configurationParser;
     private final AuthorizationRepository repository;
 
     @Inject
-    public AuthorizationManager(TypeBuilder typeBuilder, AuthorizationRepository repository) {
+    public AuthorizationManager(TypeBuilder typeBuilder, ConfigurationParser configurationParser, AuthorizationRepository repository) {
         this.typeBuilder = typeBuilder;
+        this.configurationParser = configurationParser;
         this.repository = repository;
     }
 
     public ObjectDataResponse authorize(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
         String status = "401";
+
+        ServiceConfiguration configuration = configurationParser.from(request);
 
         switch (request.getAuthorization().getGlobalAuthenticationType()) {
             case AllUsers:
@@ -46,7 +52,7 @@ public class AuthorizationManager {
             case Specified:
                 if (!authenticatedWho.getUserId().equals("PUBLIC_USER")) {
                     // Get a list of groups that the logged-in user is a member of
-                    List<UUID> groups = repository.findGroupsForUser(UUID.fromString(authenticatedWho.getUserId()));
+                    List<UUID> groups = repository.findGroupsForUser(configuration, UUID.fromString(authenticatedWho.getUserId()));
 
                     // Check if the logged-in user is allowed to authorize against the flow
                     if (request.getAuthorization().hasUsers()) {
@@ -89,7 +95,9 @@ public class AuthorizationManager {
     }
 
     public ObjectDataResponse groups(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
-        List<AuthorizationGroup> groups = repository.findAllGroups(authenticatedWho.getManyWhoTenantId()).stream()
+        ServiceConfiguration configuration = configurationParser.from(request);
+
+        List<AuthorizationGroup> groups = repository.findAllGroups(configuration).stream()
                 .map(group -> new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()))
                 .collect(Collectors.toList());
 
@@ -104,7 +112,9 @@ public class AuthorizationManager {
     }
 
     public ObjectDataResponse users(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
-        List<AuthorizationUser> users = repository.findAllUsers(authenticatedWho.getManyWhoTenantId()).stream()
+        ServiceConfiguration configuration = configurationParser.from(request);
+
+        List<AuthorizationUser> users = repository.findAllUsers(configuration).stream()
                 .map(user -> new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()))
                 .collect(Collectors.toList());
 

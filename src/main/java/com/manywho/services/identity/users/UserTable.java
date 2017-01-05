@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "User")
 public class UserTable {
 
     private UUID id;
@@ -25,7 +25,6 @@ public class UserTable {
     private String email;
     private String password;
     private Set<GroupTable> groups = Sets.newHashSet();
-    private UUID tenantId;
     private OffsetDateTime createdAt = OffsetDateTime.now();
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 
@@ -101,16 +100,6 @@ public class UserTable {
 
     public void setGroups(Set<GroupTable> groups) {
         this.groups = groups;
-    }
-
-    @Basic
-    @Column(name = "tenant_id")
-    public UUID getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(UUID tenantId) {
-        this.tenantId = tenantId;
     }
 
     @Basic

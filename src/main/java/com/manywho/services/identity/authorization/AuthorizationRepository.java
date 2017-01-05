@@ -1,6 +1,7 @@
 package com.manywho.services.identity.authorization;
 
 import com.manywho.sdk.api.run.elements.type.ListFilter;
+import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.groups.Group;
 import com.manywho.services.identity.groups.GroupRepository;
 import com.manywho.services.identity.users.User;
@@ -20,15 +21,15 @@ public class AuthorizationRepository {
         this.userRepository = userRepository;
     }
 
-    public List<Group> findAllGroups(UUID tenant) {
-        return groupRepository.findAllByTenant(tenant, new ListFilter());
+    public List<Group> findAllGroups(ServiceConfiguration configuration) {
+        return groupRepository.findAllByTenant(configuration, new ListFilter());
     }
 
-    public List<User> findAllUsers(UUID tenant) {
-        return userRepository.findAllByTenant(tenant, new ListFilter());
+    public List<User> findAllUsers(ServiceConfiguration configuration) {
+        return userRepository.findAllByTenant(configuration, new ListFilter());
     }
 
-    public List<UUID> findGroupsForUser(UUID user) {
-        return userRepository.findGroups(user);
+    public List<UUID> findGroupsForUser(ServiceConfiguration configuration, UUID user) {
+        return userRepository.findGroups(configuration, user);
     }
 }

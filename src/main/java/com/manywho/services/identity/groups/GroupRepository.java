@@ -1,38 +1,68 @@
 package com.manywho.services.identity.groups;
 
-import com.google.inject.persist.Transactional;
 import com.manywho.sdk.api.run.elements.type.ListFilter;
 import com.manywho.sdk.services.database.FilterHelper;
 import com.manywho.sdk.services.utils.UUIDs;
-import com.manywho.services.identity.jpa.JpaQueryFactory;
+import com.manywho.services.identity.ServiceConfiguration;
+import com.manywho.services.identity.jpa.JpaFactory;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class GroupRepository {
-    private final JpaQueryFactory queryFactory;
-    private final EntityManager entityManager;
+    private final JpaFactory jpaFactory;
     private final FilterHelper filterHelper;
 
     @Inject
-    public GroupRepository(JpaQueryFactory queryFactory, EntityManager entityManager, FilterHelper filterHelper) {
-        this.queryFactory = queryFactory;
-        this.entityManager = entityManager;
+    public GroupRepository(JpaFactory jpaFactory, FilterHelper filterHelper) {
+        this.jpaFactory = jpaFactory;
         this.filterHelper = filterHelper;
     }
 
-    public List<Group> findAllByTenant(UUID tenant, ListFilter filter) {
+    public void create(ServiceConfiguration configuration, Group group) {
+        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+
+        GroupTable groupTable = new GroupTable();
+        groupTable.setDescription(group.getDescription());
+        groupTable.setId(group.getId());
+        groupTable.setName(group.getName());
+
+        EntityTransaction transaction = entityManager.getTransaction();
+        transaction.begin();
+
+        entityManager.persist(groupTable);
+        entityManager.flush();
+
+        transaction.commit();
+    }
+
+    public boolean existsByName(ServiceConfiguration configuration, String name) {
+        JPAQueryFactory queryFactory = jpaFactory.createQueryFactory(configuration);
+
+        QGroupTable table = QGroupTable.groupTable;
+
+        JPAQuery<Boolean> query = queryFactory.select(
+                table.id.count().gt(0)
+        )
+                .from(table)
+                .where(table.name.eq(name));
+
+        return query.fetchFirst();
+    }
+
+    public List<Group> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
         QGroupTable groupTable = QGroupTable.groupTable;
 
-        JPAQuery<GroupTable> query = queryFactory.selectFrom(groupTable)
-                .where(groupTable.tenantId.eq(tenant));
+        JPAQuery<GroupTable> query = jpaFactory.createQueryFactory(configuration).selectFrom(groupTable);
 
         // If we're given a property to order by, the we'll find it in the type and order the query by it
         if (filter.hasOrderByPropertyDeveloperName()) {
@@ -83,17 +113,21 @@ public class GroupRepository {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public void update(UUID tenant, Group group) {
+    public void update(ServiceConfiguration configuration, Group group) {
+        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+
         QGroupTable table = QGroupTable.groupTable;
 
-        JPAUpdateClause updateClause = new JPAUpdateClause(entityManager, table);
-
-        updateClause.set(table.name, group.getName())
+        JPAUpdateClause updateClause = new JPAUpdateClause(entityManager, table)
+                .set(table.name, group.getName())
                 .set(table.description, group.getDescription())
-                .where(table.id.eq(group.getId()))
-                .where(table.tenantId.eq(tenant));
+                .where(table.id.eq(group.getId()));
+
+        EntityTransaction transaction = entityManager.getTransaction();
+        transaction.begin();
 
         updateClause.execute();
+
+        transaction.commit();
     }
 }

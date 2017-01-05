@@ -2,6 +2,8 @@ package com.manywho.services.identity.authentication;
 
 import com.manywho.sdk.api.security.AuthenticatedWhoResult;
 import com.manywho.sdk.api.security.AuthenticationCredentials;
+import com.manywho.sdk.services.configuration.ConfigurationParser;
+import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.users.User;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
@@ -10,16 +12,19 @@ import java.util.UUID;
 
 public class AuthenticationManager {
     private final AuthenticationRepository repository;
+    private final ConfigurationParser configurationParser;
 
     @Inject
-    public AuthenticationManager(AuthenticationRepository repository) {
+    public AuthenticationManager(AuthenticationRepository repository, ConfigurationParser configurationParser) {
         this.repository = repository;
+        this.configurationParser = configurationParser;
     }
 
     public AuthenticatedWhoResult authenticate(AuthenticationCredentials credentials) {
+        ServiceConfiguration configuration = configurationParser.from(credentials);
+
         // See if the user exists by the given email address
-        User user = repository.findUserByEmail(credentials.getUsername(), UUID.fromString("ad5348c9-df8b-462e-9f9d-492bff5a9468"));
-//        User user = repository.findUserByEmail(credentials.getUsername(), credentials.getTenantId());
+        User user = repository.findUserByEmail(configuration, credentials.getUsername());
         if (user == null || !user.hasPassword()) {
             return AuthenticatedWhoResult.createDeniedResult();
         }

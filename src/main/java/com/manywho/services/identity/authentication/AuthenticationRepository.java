@@ -1,26 +1,32 @@
 package com.manywho.services.identity.authentication;
 
-import com.manywho.services.identity.jpa.JpaQueryFactory;
+import com.manywho.services.identity.ServiceConfiguration;
+import com.manywho.services.identity.jpa.JpaFactory;
 import com.manywho.services.identity.users.QUserTable;
 import com.manywho.services.identity.users.User;
+import com.manywho.services.identity.users.UserTable;
 
 import javax.inject.Inject;
-import java.util.UUID;
 
 public class AuthenticationRepository {
-    private final JpaQueryFactory queryFactory;
+    private final JpaFactory jpaFactory;
 
     @Inject
-    public AuthenticationRepository(JpaQueryFactory queryFactory) {
-        this.queryFactory = queryFactory;
+    public AuthenticationRepository(JpaFactory jpaFactory) {
+        this.jpaFactory = jpaFactory;
     }
 
-    public User findUserByEmail(String email, UUID tenant) {
+    public User findUserByEmail(ServiceConfiguration configuration, String email) {
         QUserTable table = QUserTable.userTable;
 
-        return new User(queryFactory.selectFrom(table)
+        UserTable user = jpaFactory.createQueryFactory(configuration).selectFrom(table)
                 .where(table.email.eq(email))
-                .where(table.tenantId.eq(tenant))
-                .fetchOne());
+                .fetchOne();
+
+        if (user == null) {
+            throw new RuntimeException("Unable to find a user with those credentials");
+        }
+
+        return new User(user);
     }
 }

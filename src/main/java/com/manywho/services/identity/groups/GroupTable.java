@@ -16,13 +16,12 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "groups")
+@Table(name = "Group")
 public class GroupTable {
 
     private UUID id;
     private String name;
     private String description;
-    private UUID tenantId;
     private Set<UserTable> users = Sets.newHashSet();
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -77,18 +76,8 @@ public class GroupTable {
         this.name = name;
     }
 
-    @Basic
-    @Column(name = "tenant_id")
-    public UUID getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(UUID tenantId) {
-        this.tenantId = tenantId;
-    }
-
     @ManyToMany
-    @JoinTable(name = "memberships", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JoinTable(name = "Membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     public Set<UserTable> getUsers() {
         return users;
     }

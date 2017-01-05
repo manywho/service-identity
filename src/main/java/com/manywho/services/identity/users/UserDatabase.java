@@ -19,17 +19,14 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public User create(ServiceConfiguration configuration, User user) {
-        UUID tenant = UUID.fromString("ad5348c9-df8b-462e-9f9d-492bff5a9468");
-
         // Check if a user already exists with that email
-        if (repository.existsByEmail(tenant, user.getEmail())) {
+        if (repository.existsByEmail(configuration, user.getEmail())) {
             throw new RuntimeException("A user already exists with that email address!");
         }
 
         user.setId(UUID.randomUUID());
 
-        // TODO: Properly work out how scope to the Tenant
-        repository.create(tenant, user);
+        repository.create(configuration, user);
 
         return user;
     }
@@ -41,8 +38,7 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public void delete(ServiceConfiguration configuration, User user) {
-        // TODO: Properly work out how scope to the Tenant
-        repository.delete(UUID.fromString("ad5348c9-df8b-462e-9f9d-492bff5a9468"), user);
+        repository.delete(configuration, user);
     }
 
     @Override
@@ -57,8 +53,7 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
             user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()));
         }
 
-        // TODO: Properly work out how scope to the Tenant
-        repository.update(UUID.fromString("ad5348c9-df8b-462e-9f9d-492bff5a9468"), user);
+        repository.update(configuration, user);
 
         return user;
     }
@@ -75,7 +70,6 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public List<User> findAll(ServiceConfiguration configuration, ListFilter listFilter) {
-        // TODO: Properly work out how scope to the Tenant
-        return repository.findAllByTenant(UUID.fromString("ad5348c9-df8b-462e-9f9d-492bff5a9468"), new ListFilter());
+        return repository.findAllByTenant(configuration, new ListFilter());
     }
 }
