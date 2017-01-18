@@ -5,6 +5,7 @@ import com.manywho.sdk.services.database.FilterHelper;
 import com.manywho.sdk.services.utils.UUIDs;
 import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.jpa.JpaFactory;
+import com.manywho.services.identity.jpa.Ordering;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -72,15 +73,8 @@ public class GroupRepository {
             StringPath path = new PathBuilder<>(Group.class, groupTable.getMetadata())
                     .getString(fieldName);
 
-            switch (filter.getOrderByDirectionType().toUpperCase()) {
-                case "ASC":
-                    query.orderBy(path.asc());
-                    break;
-                case "DESC":
-                default:
-                    query.orderBy(path.desc());
-                    break;
-            }
+            // Order by the given direction in the ListFilter
+            query.orderBy(Ordering.createOrderSpecifier(filter.getOrderByDirectionType(), path));
         }
 
         if (filter.hasLimit()) {

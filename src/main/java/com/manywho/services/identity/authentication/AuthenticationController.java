@@ -1,7 +1,5 @@
 package com.manywho.services.identity.authentication;
 
-import com.google.inject.Provider;
-import com.manywho.sdk.api.security.AuthenticatedWho;
 import com.manywho.sdk.api.security.AuthenticatedWhoResult;
 import com.manywho.sdk.api.security.AuthenticationCredentials;
 
@@ -16,12 +14,10 @@ import javax.ws.rs.core.MediaType;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthenticationController {
-    private final Provider<AuthenticatedWho> authenticatedWhoProvider;
     private final AuthenticationManager manager;
 
     @Inject
-    public AuthenticationController(Provider<AuthenticatedWho> authenticatedWhoProvider, AuthenticationManager manager) {
-        this.authenticatedWhoProvider = authenticatedWhoProvider;
+    public AuthenticationController(AuthenticationManager manager) {
         this.manager = manager;
     }
 

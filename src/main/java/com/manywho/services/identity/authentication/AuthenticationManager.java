@@ -36,10 +36,10 @@ public class AuthenticationManager {
             authenticatedWhoResult.setDirectoryName("ManyWho Identity");
             authenticatedWhoResult.setEmail(user.getEmail());
             authenticatedWhoResult.setFirstName(user.getFirstName());
-            authenticatedWhoResult.setIdentityProvider("?!?!?!?!!?");
+            authenticatedWhoResult.setIdentityProvider("?");
             authenticatedWhoResult.setLastName(user.getLastName());
             authenticatedWhoResult.setStatus(AuthenticatedWhoResult.AuthenticationStatus.Authenticated);
-            authenticatedWhoResult.setTenantName("??!?!?!?");
+            authenticatedWhoResult.setTenantName("?");
             authenticatedWhoResult.setToken(UUID.randomUUID().toString());
             authenticatedWhoResult.setUserId(user.getId().toString());
             authenticatedWhoResult.setUsername(user.getEmail());

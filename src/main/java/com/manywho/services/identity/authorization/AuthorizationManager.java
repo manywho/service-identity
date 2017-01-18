@@ -87,14 +87,14 @@ public class AuthorizationManager {
         return new ObjectDataResponse(typeBuilder.from(user));
     }
 
-    public ObjectDataResponse groupAttributes(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
+    public ObjectDataResponse groupAttributes() {
         List<AuthorizationAttribute> attributes = Lists.newArrayList();
         attributes.add(new AuthorizationAttribute("MEMBERS", "Members"));
 
         return new ObjectDataResponse(typeBuilder.from(attributes));
     }
 
-    public ObjectDataResponse groups(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
+    public ObjectDataResponse groups(ObjectDataRequest request) {
         ServiceConfiguration configuration = configurationParser.from(request);
 
         List<AuthorizationGroup> groups = repository.findAllGroups(configuration).stream()
@@ -104,14 +104,14 @@ public class AuthorizationManager {
         return new ObjectDataResponse(typeBuilder.from(groups));
     }
 
-    public ObjectDataResponse userAttributes(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
+    public ObjectDataResponse userAttributes() {
         List<AuthorizationAttribute> attributes = Lists.newArrayList();
         attributes.add(new AuthorizationAttribute("MEMBERS", "Members"));
 
         return new ObjectDataResponse(typeBuilder.from(attributes));
     }
 
-    public ObjectDataResponse users(AuthenticatedWho authenticatedWho, ObjectDataRequest request) {
+    public ObjectDataResponse users(ObjectDataRequest request) {
         ServiceConfiguration configuration = configurationParser.from(request);
 
         List<AuthorizationUser> users = repository.findAllUsers(configuration).stream()

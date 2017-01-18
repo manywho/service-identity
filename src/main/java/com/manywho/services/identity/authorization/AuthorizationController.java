@@ -33,25 +33,25 @@ public class AuthorizationController {
 
     @Path("/group/attribute")
     @POST
-    public ObjectDataResponse groupAttributes(ObjectDataRequest request) {
-        return manager.groupAttributes(authenticatedWhoProvider.get(), request);
+    public ObjectDataResponse groupAttributes() {
+        return manager.groupAttributes();
     }
 
     @Path("/group")
     @POST
     public ObjectDataResponse groups(ObjectDataRequest request) {
-        return manager.groups(authenticatedWhoProvider.get(), request);
+        return manager.groups(request);
     }
 
     @Path("/user/attribute")
     @POST
-    public ObjectDataResponse userAttributes(ObjectDataRequest request) {
-        return manager.userAttributes(authenticatedWhoProvider.get(), request);
+    public ObjectDataResponse userAttributes() {
+        return manager.userAttributes();
     }
 
     @Path("/user")
     @POST
     public ObjectDataResponse users(ObjectDataRequest request) {
-        return manager.users(authenticatedWhoProvider.get(), request);
+        return manager.users(request);
     }
 }
