@@ -32,17 +32,17 @@ public class GroupDatabase implements Database<ServiceConfiguration, Group> {
 
     @Override
     public List<Group> create(ServiceConfiguration configuration, List<Group> objects) {
-        return null;
+        throw new RuntimeException("Creating multiple groups at once isn't supported yet");
     }
 
     @Override
     public void delete(ServiceConfiguration configuration, Group object) {
-
+        throw new RuntimeException("Deleting groups isn't supported yet");
     }
 
     @Override
     public void delete(ServiceConfiguration configuration, List<Group> objects) {
-
+        throw new RuntimeException("Deleting multiple groups at once isn't supported yet");
     }
 
     @Override
@@ -54,12 +54,12 @@ public class GroupDatabase implements Database<ServiceConfiguration, Group> {
 
     @Override
     public List<Group> update(ServiceConfiguration configuration, List<Group> objects) {
-        return null;
+        throw new RuntimeException("Updating multiple groups at once isn't supported yet");
     }
 
     @Override
     public Group find(ServiceConfiguration configuration, String id) {
-        return null;
+        throw new RuntimeException("Loading a single user isn't supported yet");
     }
 
     @Override

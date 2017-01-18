@@ -33,7 +33,7 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public List<User> create(ServiceConfiguration configuration, List<User> list) {
-        return null;
+        throw new RuntimeException("Creating multiple users at once isn't supported yet");
     }
 
     @Override
@@ -43,7 +43,7 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public void delete(ServiceConfiguration configuration, List<User> list) {
-
+        throw new RuntimeException("Deleting multiple users at once isn't supported yet");
     }
 
     @Override
@@ -60,12 +60,12 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public List<User> update(ServiceConfiguration configuration, List<User> list) {
-        return null;
+        throw new RuntimeException("Updating multiple users at once isn't supported yet");
     }
 
     @Override
-    public User find(ServiceConfiguration configuration, String s) {
-        return null;
+    public User find(ServiceConfiguration configuration, String id) {
+        throw new RuntimeException("Loading a single user isn't supported yet");
     }
 
     @Override
