@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "Group")
+@Table(name = "\"Group\"")
 public class GroupTable {
 
     private UUID id;
@@ -77,7 +77,7 @@ public class GroupTable {
     }
 
     @ManyToMany
-    @JoinTable(name = "Membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JoinTable(name = "\"Membership\"", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     public Set<UserTable> getUsers() {
         return users;
     }
