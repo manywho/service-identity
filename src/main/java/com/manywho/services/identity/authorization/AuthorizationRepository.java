@@ -32,4 +32,12 @@ public class AuthorizationRepository {
     public List<UUID> findGroupsForUser(ServiceConfiguration configuration, UUID user) {
         return userRepository.findGroups(configuration, user);
     }
+
+    public User findUser(ServiceConfiguration configuration, String id) {
+        return userRepository.find(configuration, id);
+    }
+
+    public Group findGroup(ServiceConfiguration configuration, String id) {
+        return groupRepository.find(configuration, id);
+    }
 }

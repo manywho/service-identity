@@ -6,11 +6,17 @@ import com.manywho.sdk.services.utils.UUIDs;
 import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.jpa.DslFactory;
 import com.manywho.services.identity.jpa.Ordering;
+import com.manywho.services.identity.users.QUserTable;
+import com.manywho.services.identity.users.User;
+import com.manywho.services.identity.users.UserTable;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
+import com.querydsl.sql.SQLQuery;
+import com.querydsl.sql.SQLQueryFactory;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;

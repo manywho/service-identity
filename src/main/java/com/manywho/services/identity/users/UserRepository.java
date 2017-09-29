@@ -88,6 +88,16 @@ public class UserRepository {
         return query.fetchOne();
     }
 
+    public User find(ServiceConfiguration configuration, String id) {
+        QUserTable userTable = QUserTable.userTable;
+
+        JPAQuery<UserTable> query = dslFactory.createJpaQueryFactory(configuration)
+                .selectFrom(userTable)
+                .where(userTable.id.eq(UUID.fromString(id)));
+
+        return new User(query.fetchOne());
+    }
+
     public List<User> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
         QUserTable userTable = QUserTable.userTable;
 

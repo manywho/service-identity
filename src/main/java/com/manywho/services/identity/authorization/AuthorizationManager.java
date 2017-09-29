@@ -2,7 +2,6 @@ package com.manywho.services.identity.authorization;
 
 import com.google.common.collect.Lists;
 import com.manywho.sdk.api.AuthorizationType;
-import com.manywho.sdk.api.run.elements.config.Group;
 import com.manywho.sdk.api.run.elements.type.ObjectDataRequest;
 import com.manywho.sdk.api.run.elements.type.ObjectDataResponse;
 import com.manywho.sdk.api.security.AuthenticatedWho;
@@ -12,7 +11,10 @@ import com.manywho.sdk.services.types.system.$User;
 import com.manywho.sdk.services.types.system.AuthorizationAttribute;
 import com.manywho.sdk.services.types.system.AuthorizationGroup;
 import com.manywho.sdk.services.types.system.AuthorizationUser;
+import com.manywho.sdk.services.values.ValueParser;
 import com.manywho.services.identity.ServiceConfiguration;
+import com.manywho.services.identity.users.User;
+import lombok.experimental.var;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -21,12 +23,14 @@ import java.util.stream.Collectors;
 
 public class AuthorizationManager {
     private final TypeBuilder typeBuilder;
+    private final ValueParser valueParser;
     private final ConfigurationParser configurationParser;
     private final AuthorizationRepository repository;
 
     @Inject
-    public AuthorizationManager(TypeBuilder typeBuilder, ConfigurationParser configurationParser, AuthorizationRepository repository) {
+    public AuthorizationManager(TypeBuilder typeBuilder, ValueParser valueParser, ConfigurationParser configurationParser, AuthorizationRepository repository) {
         this.typeBuilder = typeBuilder;
+        this.valueParser = valueParser;
         this.configurationParser = configurationParser;
         this.repository = repository;
     }
@@ -64,7 +68,7 @@ public class AuthorizationManager {
 
                     // Check if the logged-in user is a member of any of the authorized groups for the flow
                     if (request.getAuthorization().hasGroups()) {
-                        for (Group group : request.getAuthorization().getGroups()) {
+                        for (var group : request.getAuthorization().getGroups()) {
                             if (groups.contains(UUID.fromString(group.getAuthenticationId()))) {
                                 status = "200";
                             }
@@ -97,9 +101,20 @@ public class AuthorizationManager {
     public ObjectDataResponse groups(ObjectDataRequest request) {
         ServiceConfiguration configuration = configurationParser.from(request);
 
-        List<AuthorizationGroup> groups = repository.findAllGroups(configuration).stream()
-                .map(group -> new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()))
-                .collect(Collectors.toList());
+        List<AuthorizationGroup> groups = Lists.newArrayList();
+
+        if (request.getObjectData() == null) {
+            groups = repository.findAllGroups(configuration).stream()
+                    .map(group -> new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()))
+                    .collect(Collectors.toList());
+        } else {
+            var authorizationGroup = valueParser.asObject(request.getObjectData(), AuthorizationGroup.class);
+
+            var group = repository.findGroup(configuration, authorizationGroup.getId());
+            if (group != null) {
+                groups.add(new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()));
+            }
+        }
 
         return new ObjectDataResponse(typeBuilder.from(groups));
     }
@@ -114,9 +129,20 @@ public class AuthorizationManager {
     public ObjectDataResponse users(ObjectDataRequest request) {
         ServiceConfiguration configuration = configurationParser.from(request);
 
-        List<AuthorizationUser> users = repository.findAllUsers(configuration).stream()
-                .map(user -> new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()))
-                .collect(Collectors.toList());
+        List<AuthorizationUser> users = Lists.newArrayList();
+
+        if (request.getObjectData() == null) {
+            users = repository.findAllUsers(configuration).stream()
+                    .map(user -> new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()))
+                    .collect(Collectors.toList());
+        } else {
+            var authorizationUser = valueParser.asObject(request.getObjectData(), AuthorizationUser.class);
+
+            var user = repository.findUser(configuration, authorizationUser.getId());
+            if (user != null) {
+                users.add(new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()));
+            }
+        }
 
         return new ObjectDataResponse(typeBuilder.from(users));
     }
