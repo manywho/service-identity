@@ -6,15 +6,17 @@ import com.manywho.sdk.services.utils.UUIDs;
 import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.groups.Group;
 import com.manywho.services.identity.groups.GroupTable;
-import com.manywho.services.identity.jpa.JpaFactory;
+import com.manywho.services.identity.jpa.DslFactory;
 import com.manywho.services.identity.jpa.Ordering;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPADeleteClause;
 import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
+import com.querydsl.sql.PostgreSQLTemplates;
+import com.querydsl.sql.SQLQuery;
+import com.querydsl.sql.SQLQueryFactory;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -24,23 +26,24 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UserRepository {
-    private final JpaFactory jpaFactory;
+    private final DslFactory dslFactory;
     private final FilterHelper filterHelper;
 
     @Inject
-    public UserRepository(JpaFactory jpaFactory, FilterHelper filterHelper) {
-        this.jpaFactory = jpaFactory;
+    public UserRepository(DslFactory dslFactory, FilterHelper filterHelper) {
+        this.dslFactory = dslFactory;
         this.filterHelper = filterHelper;
     }
 
     public void create(ServiceConfiguration configuration, User user) {
-        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+        EntityManager entityManager = dslFactory.createEntityManager(configuration);
 
         UserTable userTable = new UserTable();
         userTable.setEmail(user.getEmail());
         userTable.setFirstName(user.getFirstName());
         userTable.setId(user.getId());
         userTable.setLastName(user.getLastName());
+        userTable.setPassword(user.getPassword());
 
         for (Group group : user.getGroups()) {
             userTable.getGroups().add(entityManager.find(GroupTable.class, group.getId()));
@@ -56,7 +59,7 @@ public class UserRepository {
     }
 
     public void delete(ServiceConfiguration configuration, User user) {
-        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+        EntityManager entityManager = dslFactory.createEntityManager(configuration);
 
         QUserTable table = QUserTable.userTable;
 
@@ -71,16 +74,16 @@ public class UserRepository {
     }
 
     public Boolean existsByEmail(ServiceConfiguration configuration, String email) {
-        JPAQueryFactory queryFactory = jpaFactory.createQueryFactory(configuration);
+        SQLQueryFactory queryFactory = dslFactory.createSqlQueryFactory(configuration);
 
-        QUserTable table = QUserTable.userTable;
+        QUserTable table = new QUserTable("User");
 
-        JPAQuery<Boolean> query = queryFactory.select(
+        SQLQuery<Boolean> query = queryFactory.select(
                 queryFactory.select(Expressions.constant(1))
                         .from(table)
                         .where(table.email.eq(email))
                         .exists()
-        ).from(table);
+        );
 
         return query.fetchOne();
     }
@@ -88,7 +91,7 @@ public class UserRepository {
     public List<User> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
         QUserTable userTable = QUserTable.userTable;
 
-        JPAQuery<UserTable> query = jpaFactory.createQueryFactory(configuration).selectFrom(userTable);
+        JPAQuery<UserTable> query = dslFactory.createJpaQueryFactory(configuration).selectFrom(userTable);
 
         // If we're given a property to order by, the we'll find it in the type and order the query by it
         if (filter.hasOrderByPropertyDeveloperName()) {
@@ -137,7 +140,7 @@ public class UserRepository {
     public List<UUID> findGroups(ServiceConfiguration configuration, UUID user) {
         QUserTable table = QUserTable.userTable;
 
-        JPAQuery<UUID> query = jpaFactory.createQueryFactory(configuration).select(table.groups.any().id)
+        JPAQuery<UUID> query = dslFactory.createJpaQueryFactory(configuration).select(table.groups.any().id)
                 .from(table)
                 .where(table.id.eq(user));
 
@@ -145,7 +148,7 @@ public class UserRepository {
     }
 
     public void update(ServiceConfiguration configuration, User user) {
-        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+        EntityManager entityManager = dslFactory.createEntityManager(configuration);
 
         QUserTable table = QUserTable.userTable;
 
@@ -153,8 +156,11 @@ public class UserRepository {
                 .set(table.firstName, user.getFirstName())
                 .set(table.lastName, user.getLastName())
                 .set(table.email, user.getEmail())
-                .set(table.password, user.getPassword())
                 .where(table.id.eq(user.getId()));
+
+        if (user.getPassword() != null) {
+            updateClause.set(table.password, user.getPassword());
+        }
 
         EntityTransaction transaction = entityManager.getTransaction();
         transaction.begin();

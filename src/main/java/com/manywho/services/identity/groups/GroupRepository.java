@@ -4,7 +4,7 @@ import com.manywho.sdk.api.run.elements.type.ListFilter;
 import com.manywho.sdk.services.database.FilterHelper;
 import com.manywho.sdk.services.utils.UUIDs;
 import com.manywho.services.identity.ServiceConfiguration;
-import com.manywho.services.identity.jpa.JpaFactory;
+import com.manywho.services.identity.jpa.DslFactory;
 import com.manywho.services.identity.jpa.Ordering;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
@@ -20,17 +20,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class GroupRepository {
-    private final JpaFactory jpaFactory;
+    private final DslFactory dslFactory;
     private final FilterHelper filterHelper;
 
     @Inject
-    public GroupRepository(JpaFactory jpaFactory, FilterHelper filterHelper) {
-        this.jpaFactory = jpaFactory;
+    public GroupRepository(DslFactory dslFactory, FilterHelper filterHelper) {
+        this.dslFactory = dslFactory;
         this.filterHelper = filterHelper;
     }
 
     public void create(ServiceConfiguration configuration, Group group) {
-        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+        EntityManager entityManager = dslFactory.createEntityManager(configuration);
 
         GroupTable groupTable = new GroupTable();
         groupTable.setDescription(group.getDescription());
@@ -47,7 +47,7 @@ public class GroupRepository {
     }
 
     public boolean existsByName(ServiceConfiguration configuration, String name) {
-        JPAQueryFactory queryFactory = jpaFactory.createQueryFactory(configuration);
+        JPAQueryFactory queryFactory = dslFactory.createJpaQueryFactory(configuration);
 
         QGroupTable table = QGroupTable.groupTable;
 
@@ -63,7 +63,7 @@ public class GroupRepository {
     public List<Group> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
         QGroupTable groupTable = QGroupTable.groupTable;
 
-        JPAQuery<GroupTable> query = jpaFactory.createQueryFactory(configuration).selectFrom(groupTable);
+        JPAQuery<GroupTable> query = dslFactory.createJpaQueryFactory(configuration).selectFrom(groupTable);
 
         // If we're given a property to order by, the we'll find it in the type and order the query by it
         if (filter.hasOrderByPropertyDeveloperName()) {
@@ -108,7 +108,7 @@ public class GroupRepository {
     }
 
     public void update(ServiceConfiguration configuration, Group group) {
-        EntityManager entityManager = jpaFactory.createEntityManager(configuration);
+        EntityManager entityManager = dslFactory.createEntityManager(configuration);
 
         QGroupTable table = QGroupTable.groupTable;
 

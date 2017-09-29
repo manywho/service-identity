@@ -3,15 +3,39 @@ package com.manywho.services.identity.jpa;
 import com.google.common.collect.Maps;
 import com.manywho.services.identity.ServiceConfiguration;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.querydsl.sql.Configuration;
+import com.querydsl.sql.PostgreSQLTemplates;
+import com.querydsl.sql.SQLQueryFactory;
+import org.postgresql.ds.PGSimpleDataSource;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+import javax.sql.DataSource;
 import java.util.Map;
 
-public class JpaFactory {
-    public JPAQueryFactory createQueryFactory(ServiceConfiguration configuration) {
+public class DslFactory {
+    public JPAQueryFactory createJpaQueryFactory(ServiceConfiguration configuration) {
         return new JPAQueryFactory(createEntityManager(configuration));
+    }
+
+    public SQLQueryFactory createSqlQueryFactory(ServiceConfiguration configuration) {
+        DataSource dataSource;
+
+        switch (configuration.getDatabaseType()) {
+            case "postgresql":
+                dataSource = new PGSimpleDataSource();
+                ((PGSimpleDataSource) dataSource).setServerName(configuration.getDatabaseHostname());
+                ((PGSimpleDataSource) dataSource).setDatabaseName(configuration.getDatabaseName());
+                ((PGSimpleDataSource) dataSource).setPortNumber(configuration.getDatabasePort());
+                ((PGSimpleDataSource) dataSource).setUser(configuration.getDatabaseUsername());
+                ((PGSimpleDataSource) dataSource).setPassword(configuration.getDatabasePassword());
+                break;
+            default:
+                throw new RuntimeException("The database type " + configuration.getDatabaseType() + " is not supported");
+        }
+
+        return new SQLQueryFactory(new Configuration(new PostgreSQLTemplates()), dataSource);
     }
 
     public EntityManager createEntityManager(ServiceConfiguration configuration) {

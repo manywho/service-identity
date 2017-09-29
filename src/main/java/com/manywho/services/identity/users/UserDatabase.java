@@ -26,6 +26,14 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
         user.setId(UUID.randomUUID());
 
+        // Only update the password if one was given
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            // We need to set this to null because empty strings are sent in for "no value" 🙄
+            user.setPassword(null);
+        } else {
+            user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()));
+        }
+
         repository.create(configuration, user);
 
         return user;
@@ -49,7 +57,10 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
     @Override
     public User update(ServiceConfiguration configuration, User user) {
         // Only update the password if one was given
-        if (user.getPassword() != null || !user.getPassword().isEmpty()) {
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            // We need to set this to null because empty strings are sent in for "no value" 🙄
+            user.setPassword(null);
+        } else {
             user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()));
         }
 
