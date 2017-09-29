@@ -4,6 +4,7 @@ import com.google.inject.Provider;
 import com.manywho.sdk.api.run.elements.type.ObjectDataRequest;
 import com.manywho.sdk.api.run.elements.type.ObjectDataResponse;
 import com.manywho.sdk.api.security.AuthenticatedWho;
+import com.manywho.sdk.services.controllers.AbstractAuthorizationController;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -15,7 +16,7 @@ import javax.ws.rs.core.MediaType;
 @Path("/authorization")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class AuthorizationController {
+public class AuthorizationController extends AbstractAuthorizationController {
     private final Provider<AuthenticatedWho> authenticatedWhoProvider;
     private final AuthorizationManager manager;
 
@@ -27,7 +28,7 @@ public class AuthorizationController {
 
     @Path("/")
     @POST
-    public ObjectDataResponse authorize(ObjectDataRequest request) {
+    public ObjectDataResponse authorization(ObjectDataRequest request) {
         return manager.authorize(authenticatedWhoProvider.get(), request);
     }
 
