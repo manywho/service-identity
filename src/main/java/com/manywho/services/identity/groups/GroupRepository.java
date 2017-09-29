@@ -53,17 +53,32 @@ public class GroupRepository {
     }
 
     public boolean existsByName(ServiceConfiguration configuration, String name) {
-        JPAQueryFactory queryFactory = dslFactory.createJpaQueryFactory(configuration);
+        SQLQueryFactory queryFactory = dslFactory.createSqlQueryFactory(configuration);
 
-        QGroupTable table = QGroupTable.groupTable;
+        QGroupTable table = new QGroupTable("Group");
 
-        JPAQuery<Boolean> query = queryFactory.select(
-                table.id.count().gt(0)
-        )
-                .from(table)
-                .where(table.name.eq(name));
+        SQLQuery<Boolean> query = queryFactory.select(
+                queryFactory.select(Expressions.constant(1))
+                        .from(table)
+                        .where(table.name.eq(name))
+                        .groupBy(table.name)
+                        .having(
+                                table.id.count().gt(0)
+                        )
+                        .exists()
+        );
 
-        return query.fetchFirst();
+        return query.fetchOne();
+    }
+
+    public Group find(ServiceConfiguration configuration, String id) {
+        QGroupTable groupTable = QGroupTable.groupTable;
+
+        JPAQuery<GroupTable> query = dslFactory.createJpaQueryFactory(configuration)
+                .selectFrom(groupTable)
+                .where(groupTable.id.eq(UUID.fromString(id)));
+
+        return new Group(query.fetchOne());
     }
 
     public List<Group> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
