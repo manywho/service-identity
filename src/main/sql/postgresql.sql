@@ -9,19 +9,6 @@ CREATE TABLE "Group"
   CONSTRAINT uq_group_name UNIQUE (name)
 );
 
-CREATE TABLE "Membership"
-(
-  user_id uuid NOT NULL,
-  group_id uuid NOT NULL,
-  CONSTRAINT pk_membership PRIMARY KEY (user_id, group_id),
-  CONSTRAINT fk_membership_group_id FOREIGN KEY (group_id)
-      REFERENCES public."Group" (id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT fk_membership_user_id FOREIGN KEY (user_id)
-      REFERENCES public."User" (id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
 CREATE TABLE "User"
 (
   id uuid NOT NULL,
@@ -33,4 +20,17 @@ CREATE TABLE "User"
   updated_at timestamp with time zone NOT NULL,
   CONSTRAINT pk_user PRIMARY KEY (id),
   CONSTRAINT uq_user_email UNIQUE (email)
+);
+
+CREATE TABLE "Membership"
+(
+  user_id uuid NOT NULL,
+  group_id uuid NOT NULL,
+  CONSTRAINT pk_membership PRIMARY KEY (user_id, group_id),
+  CONSTRAINT fk_membership_group_id FOREIGN KEY (group_id)
+      REFERENCES public."Group" (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT fk_membership_user_id FOREIGN KEY (user_id)
+      REFERENCES public."User" (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
 );
