@@ -103,7 +103,7 @@ public class AuthorizationManager {
 
         List<AuthorizationGroup> groups = Lists.newArrayList();
 
-        if (request.getObjectData() == null) {
+        if (request.getObjectData() == null || request.getObjectData().isEmpty()) {
             groups = repository.findAllGroups(configuration).stream()
                     .map(group -> new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()))
                     .collect(Collectors.toList());
@@ -131,7 +131,7 @@ public class AuthorizationManager {
 
         List<AuthorizationUser> users = Lists.newArrayList();
 
-        if (request.getObjectData() == null) {
+        if (request.getObjectData() == null || request.getObjectData().isEmpty()) {
             users = repository.findAllUsers(configuration).stream()
                     .map(user -> new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()))
                     .collect(Collectors.toList());
