@@ -8,6 +8,8 @@ import com.manywho.services.identity.groups.Group;
 import com.manywho.services.identity.groups.GroupTable;
 import com.manywho.services.identity.jpa.DslFactory;
 import com.manywho.services.identity.jpa.Ordering;
+import com.manywho.services.identity.memberships.MembershipTable;
+import com.manywho.services.identity.memberships.QMembershipTable;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.core.types.dsl.StringPath;
@@ -17,6 +19,7 @@ import com.querydsl.jpa.impl.JPAUpdateClause;
 import com.querydsl.sql.PostgreSQLTemplates;
 import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLQueryFactory;
+import lombok.experimental.var;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -176,6 +179,21 @@ public class UserRepository {
         transaction.begin();
 
         updateClause.execute();
+
+        // If the user has some groups attached, we want to add them as members
+        QMembershipTable membershipTable = QMembershipTable.membershipTable;
+
+        // First delete all their memberships
+        new JPADeleteClause(entityManager, membershipTable)
+                .where(membershipTable.user.eq(user.getId()))
+                .execute();
+
+        // Now add the new memberships
+        for (var group : user.getGroups()) {
+            entityManager.persist(new MembershipTable(user.getId(), group.getId()));
+        }
+
+        entityManager.flush();
 
         transaction.commit();
     }
