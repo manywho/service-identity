@@ -151,11 +151,11 @@ public class UserRepository {
     }
 
     public List<UUID> findGroups(ServiceConfiguration configuration, UUID user) {
-        QUserTable table = QUserTable.userTable;
+        QMembershipTable table = QMembershipTable.membershipTable;
 
-        JPAQuery<UUID> query = dslFactory.createJpaQueryFactory(configuration).select(table.groups.any().id)
+        JPAQuery<UUID> query = dslFactory.createJpaQueryFactory(configuration).select(table.group)
                 .from(table)
-                .where(table.id.eq(user));
+                .where(table.user.eq(user));
 
         return query.fetch();
     }
