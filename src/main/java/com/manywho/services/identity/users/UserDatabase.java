@@ -81,6 +81,6 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public List<User> findAll(ServiceConfiguration configuration, ListFilter listFilter) {
-        return repository.findAllByTenant(configuration, new ListFilter());
+        return repository.findAllByTenant(configuration, listFilter);
     }
 }
