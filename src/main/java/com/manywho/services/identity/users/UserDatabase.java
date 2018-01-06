@@ -6,6 +6,7 @@ import com.manywho.services.identity.ServiceConfiguration;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,6 +82,6 @@ public class UserDatabase implements Database<ServiceConfiguration, User> {
 
     @Override
     public List<User> findAll(ServiceConfiguration configuration, ListFilter listFilter) {
-        return repository.findAllByTenant(configuration, listFilter);
+        return new ArrayList<>(repository.findAllByTenant(configuration, listFilter));
     }
 }

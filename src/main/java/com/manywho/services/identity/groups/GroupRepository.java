@@ -1,6 +1,7 @@
 package com.manywho.services.identity.groups;
 
 import com.healthmarketscience.sqlbuilder.CustomCondition;
+import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.custom.postgresql.PgLimitClause;
 import com.healthmarketscience.sqlbuilder.custom.postgresql.PgOffsetClause;
@@ -63,7 +64,11 @@ public class GroupRepository {
 
     public List<Group> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
         SelectQuery selectQuery = new SelectQuery()
-                .addAllColumns()
+                .addCustomColumns(new CustomSql("id"))
+                .addCustomColumns(new CustomSql("name"))
+                .addCustomColumns(new CustomSql("description"))
+                .addCustomColumns(new CustomSql("created_at"))
+                .addCustomColumns(new CustomSql("updated_at"))
                 .addCustomFromTable("\"Group\"");
 
         // If we're given a property to order by, the we'll find it in the type and order the query by it

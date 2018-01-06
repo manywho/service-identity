@@ -8,6 +8,7 @@ import com.manywho.services.identity.users.User;
 import com.manywho.services.identity.users.UserRepository;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,7 +27,7 @@ public class AuthorizationRepository {
     }
 
     public List<User> findAllUsers(ServiceConfiguration configuration) {
-        return userRepository.findAllByTenant(configuration, new ListFilter());
+        return new ArrayList<>(userRepository.findAllByTenant(configuration, new ListFilter()));
     }
 
     public List<UUID> findGroupsForUser(ServiceConfiguration configuration, UUID user) {
