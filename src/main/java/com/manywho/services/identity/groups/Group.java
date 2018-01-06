@@ -28,14 +28,6 @@ public class Group implements Type {
     public Group() {
     }
 
-    public Group(GroupTable groupTable) {
-        this.id = groupTable.getId();
-        this.name = groupTable.getName();
-        this.description = groupTable.getDescription();
-        this.createdAt = groupTable.getCreatedAt();
-        this.updatedAt = groupTable.getUpdatedAt();
-    }
-
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }

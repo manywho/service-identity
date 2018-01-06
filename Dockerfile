@@ -3,7 +3,6 @@ FROM maven:alpine AS build
 WORKDIR /usr/src/app
 
 COPY src src
-COPY lombok.config lombok.config
 COPY pom.xml pom.xml
 
 RUN mvn clean package

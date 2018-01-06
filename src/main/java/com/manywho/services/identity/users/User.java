@@ -8,7 +8,6 @@ import com.manywho.services.identity.groups.Group;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Type.Element(name = "User")
 public class User implements Type {
@@ -39,20 +38,6 @@ public class User implements Type {
     private OffsetDateTime updatedAt;
 
     public User() {
-    }
-
-    public User(UserTable userTable) {
-        this.id = userTable.getId();
-        this.firstName = userTable.getFirstName();
-        this.lastName = userTable.getLastName();
-        this.email = userTable.getEmail();
-        this.password = userTable.getPassword();
-        this.createdAt = userTable.getCreatedAt();
-        this.updatedAt = userTable.getUpdatedAt();
-
-        this.groups = userTable.getGroups().stream()
-                .map(Group::new)
-                .collect(Collectors.toList());
     }
 
     public OffsetDateTime getCreatedAt() {

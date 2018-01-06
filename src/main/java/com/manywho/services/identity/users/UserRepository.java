@@ -1,200 +1,184 @@
 package com.manywho.services.identity.users;
 
+import com.healthmarketscience.sqlbuilder.CustomCondition;
+import com.healthmarketscience.sqlbuilder.SelectQuery;
+import com.healthmarketscience.sqlbuilder.custom.postgresql.PgLimitClause;
+import com.healthmarketscience.sqlbuilder.custom.postgresql.PgOffsetClause;
 import com.manywho.sdk.api.run.elements.type.ListFilter;
 import com.manywho.sdk.services.database.FilterHelper;
-import com.manywho.sdk.services.utils.UUIDs;
 import com.manywho.services.identity.ServiceConfiguration;
 import com.manywho.services.identity.groups.Group;
-import com.manywho.services.identity.groups.GroupTable;
-import com.manywho.services.identity.jpa.DslFactory;
-import com.manywho.services.identity.jpa.Ordering;
-import com.manywho.services.identity.memberships.MembershipTable;
-import com.manywho.services.identity.memberships.QMembershipTable;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.core.types.dsl.StringPath;
-import com.querydsl.jpa.impl.JPADeleteClause;
-import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAUpdateClause;
-import com.querydsl.sql.PostgreSQLTemplates;
-import com.querydsl.sql.SQLQuery;
-import com.querydsl.sql.SQLQueryFactory;
-import lombok.experimental.var;
+import com.manywho.services.identity.jdbi.JdbiFactory;
+import com.manywho.services.identity.jdbi.Ordering;
+import com.manywho.services.identity.utils.UUIDs;
+import lombok.val;
 
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class UserRepository {
-    private final DslFactory dslFactory;
+    private final JdbiFactory jdbiFactory;
     private final FilterHelper filterHelper;
 
     @Inject
-    public UserRepository(DslFactory dslFactory, FilterHelper filterHelper) {
-        this.dslFactory = dslFactory;
+    public UserRepository(JdbiFactory jdbiFactory, FilterHelper filterHelper) {
+        this.jdbiFactory = jdbiFactory;
         this.filterHelper = filterHelper;
     }
 
     public void create(ServiceConfiguration configuration, User user) {
-        EntityManager entityManager = dslFactory.createEntityManager(configuration);
+        final String sql = "INSERT INTO \"User\" (id, email, first_name, last_name, password, updated_at) VALUES (:id, :email, :firstName, :lastName, :password, :updatedAt)";
 
-        UserTable userTable = new UserTable();
-        userTable.setEmail(user.getEmail());
-        userTable.setFirstName(user.getFirstName());
-        userTable.setId(user.getId());
-        userTable.setLastName(user.getLastName());
-        userTable.setPassword(user.getPassword());
+        try (val handle = jdbiFactory.create(configuration).open()) {
+            handle.useTransaction(transaction -> {
+                // First insert the user
+                transaction.createUpdate(sql)
+                        .bind("id", user.getId())
+                        .bind("email", user.getEmail())
+                        .bind("firstName", user.getFirstName())
+                        .bind("lastName", user.getLastName())
+                        .bind("password", user.getPassword())
+                        .bind("updatedAt", OffsetDateTime.now())
+                        .execute();
 
-        for (Group group : user.getGroups()) {
-            userTable.getGroups().add(entityManager.find(GroupTable.class, group.getId()));
+                // Then insert all the groups the user is a member of
+                for (Group group : user.getGroups()) {
+                    transaction.createUpdate("INSERT INTO \"Membership\" (user_id, group_id) VALUES (:user, :group)")
+                            .bind("user", user.getId())
+                            .bind("group", group.getId())
+                            .execute();
+                }
+
+                transaction.commit();
+            });
         }
-
-        EntityTransaction transaction = entityManager.getTransaction();
-        transaction.begin();
-
-        entityManager.persist(userTable);
-        entityManager.flush();
-
-        transaction.commit();
     }
 
     public void delete(ServiceConfiguration configuration, User user) {
-        EntityManager entityManager = dslFactory.createEntityManager(configuration);
+        final String sql = "DELETE FROM \"User\" WHERE id = :id";
 
-        QUserTable table = QUserTable.userTable;
-
-        EntityTransaction transaction = entityManager.getTransaction();
-        transaction.begin();
-
-        new JPADeleteClause(entityManager, table)
-                .where(table.id.eq(user.getId()))
-                .execute();
-
-        transaction.commit();
+        jdbiFactory.create(configuration)
+                .withHandle(handle -> handle.createUpdate(sql)
+                        .bind("id", user.getId())
+                        .execute());
     }
 
     public Boolean existsByEmail(ServiceConfiguration configuration, String email) {
-        SQLQueryFactory queryFactory = dslFactory.createSqlQueryFactory(configuration);
+        final String sql = "SELECT EXISTS(SELECT 1 FROM \"User\" WHERE email = :email)";
 
-        QUserTable table = new QUserTable("User");
-
-        SQLQuery<Boolean> query = queryFactory.select(
-                queryFactory.select(Expressions.constant(1))
-                        .from(table)
-                        .where(table.email.eq(email))
-                        .exists()
-        );
-
-        return query.fetchOne();
+        return jdbiFactory.create(configuration)
+                .withHandle(handle -> handle.createQuery(sql)
+                        .bind("email", email)
+                        .mapTo(boolean.class)
+                        .findOnly());
     }
 
     public User find(ServiceConfiguration configuration, String id) {
-        QUserTable userTable = QUserTable.userTable;
+        final String sql = "SELECT id, first_name, last_name, email, created_at, updated_at FROM \"User\" WHERE id = :id";
 
-        JPAQuery<UserTable> query = dslFactory.createJpaQueryFactory(configuration)
-                .selectFrom(userTable)
-                .where(userTable.id.eq(UUID.fromString(id)));
-
-        return new User(query.fetchOne());
+        return jdbiFactory.create(configuration)
+                .withHandle(handle -> handle.createQuery(sql)
+                        .bind("id", UUID.fromString(id))
+                        .mapToBean(User.class)
+                        .findOnly());
     }
 
     public List<User> findAllByTenant(ServiceConfiguration configuration, ListFilter filter) {
-        QUserTable userTable = QUserTable.userTable;
-
-        JPAQuery<UserTable> query = dslFactory.createJpaQueryFactory(configuration).selectFrom(userTable);
+        SelectQuery selectQuery = new SelectQuery()
+                .addAllColumns()
+                .addCustomFromTable("\"User\"");
 
         // If we're given a property to order by, the we'll find it in the type and order the query by it
         if (filter.hasOrderByPropertyDeveloperName()) {
             String fieldName = filterHelper.findFieldName(User.class, filter.getOrderByPropertyDeveloperName());
 
-            // Create the path on the entity, using the field name we just discovered
-            StringPath path = new PathBuilder<>(UserTable.class, userTable.getMetadata())
-                    .getString(fieldName);
-
             // Order by the given direction in the ListFilter
-            query.orderBy(Ordering.createOrderSpecifier(filter.getOrderByDirectionType(), path));
+            selectQuery.addCustomOrdering(fieldName, Ordering.createOrderSpecifier(filter.getOrderByDirectionType()));
         }
 
         if (filter.hasLimit()) {
-            query.limit(filter.getLimit());
+            selectQuery.addCustomization(new PgLimitClause(filter.getLimit()));
         }
 
         if (filter.hasOffset()) {
-            query.offset(filter.getOffset());
+            selectQuery.addCustomization(new PgOffsetClause(filter.getOffset()));
         }
+
+        Map<String, Object> bindings = new HashMap<>();
 
         if (filter.hasSearch()) {
             // If the search query was a valid UUID then we'll try and filter by ID
             if (UUIDs.isValid(filter.getSearch())) {
-                query.where(userTable.id.eq(UUID.fromString(filter.getSearch())));
-            } else {
-                // We want to search the fields as a fully surrounding wildcard (for now)
-                String search = String.format("%%%s%%", filter.getSearch());
+                selectQuery.addCondition(new CustomCondition("id = :id"));
 
+                bindings.put("id", UUID.fromString(filter.getSearch()));
+            } else {
                 // Search in the "firstName", "lastName" and "email" fields
-                query.where(
-                        userTable.firstName.likeIgnoreCase(search).or(
-                                userTable.lastName.likeIgnoreCase(search).or(
-                                        userTable.email.likeIgnoreCase(search)
-                                )
-                        )
-                );
+                selectQuery.addCondition(new CustomCondition("first_name ILIKE '%' || :search || '%' OR last_name ILIKE '%' || :search || '%' OR email ILIKE '%' || :search || '%'"));
+
+                bindings.put("search", filter.getSearch());
             }
         }
 
-        return query.fetch().stream()
-                .map(User::new)
-                .collect(Collectors.toList());
+        try (val handle = jdbiFactory.create(configuration).open()) {
+            val query = handle.createQuery(selectQuery.toString());
+
+            for (val binding : bindings.entrySet()) {
+                query.bind(binding.getKey(), binding.getValue());
+            }
+
+            return query.mapToBean(User.class)
+                    .list();
+        }
     }
 
     public List<UUID> findGroups(ServiceConfiguration configuration, UUID user) {
-        QMembershipTable table = QMembershipTable.membershipTable;
+        final String sql = "SELECT group_id FROM \"Membership\" WHERE user_id = :user";
 
-        JPAQuery<UUID> query = dslFactory.createJpaQueryFactory(configuration).select(table.group)
-                .from(table)
-                .where(table.user.eq(user));
-
-        return query.fetch();
+        return jdbiFactory.create(configuration)
+                .withHandle(handle -> handle.createQuery(sql)
+                        .bind("user", user)
+                        .mapTo(UUID.class)
+                        .list());
     }
 
     public void update(ServiceConfiguration configuration, User user) {
-        EntityManager entityManager = dslFactory.createEntityManager(configuration);
+        final String sql = "UPDATE \"User\" SET first_name = :firstName, last_name = :lastName, email = :email, updated_at = :updatedAt WHERE id = :id";
 
-        QUserTable table = QUserTable.userTable;
+        try (val handle = jdbiFactory.create(configuration).open()) {
+            handle.useTransaction(transaction -> {
+                transaction.createUpdate(sql)
+                        .bind("firstName", user.getFirstName())
+                        .bind("lastName", user.getLastName())
+                        .bind("email", user.getEmail())
+                        .bind("id", user.getId())
+                        .bind("updatedAt", OffsetDateTime.now())
+                        .execute();
 
-        JPAUpdateClause updateClause = new JPAUpdateClause(entityManager, table)
-                .set(table.firstName, user.getFirstName())
-                .set(table.lastName, user.getLastName())
-                .set(table.email, user.getEmail())
-                .where(table.id.eq(user.getId()));
+                // If we're given a password to update, then update it
+                if (user.getPassword() != null) {
+                    transaction.createUpdate("UPDATE \"User\" SET password = :password WHERE id = :id")
+                            .bind("id", user.getId())
+                            .execute();
+                }
 
-        if (user.getPassword() != null) {
-            updateClause.set(table.password, user.getPassword());
+                // If the user has some groups attached, we want to add them as members
+                transaction.createUpdate("DELETE FROM \"Membership\" WHERE user_id = :user")
+                        .bind("user", user.getId())
+                        .execute();
+
+                // After deleting all their memberships, we add the new memberships
+                for (val group : user.getGroups()) {
+                    transaction.createUpdate("INSERT INTO \"Membership\" (group_id, user_id) VALUES (:group, :user)")
+                            .bind("group", group.getId())
+                            .bind("user", user.getId())
+                            .execute();
+                }
+            });
         }
-
-        EntityTransaction transaction = entityManager.getTransaction();
-        transaction.begin();
-
-        updateClause.execute();
-
-        // If the user has some groups attached, we want to add them as members
-        QMembershipTable membershipTable = QMembershipTable.membershipTable;
-
-        // First delete all their memberships
-        new JPADeleteClause(entityManager, membershipTable)
-                .where(membershipTable.user.eq(user.getId()))
-                .execute();
-
-        // Now add the new memberships
-        for (var group : user.getGroups()) {
-            entityManager.persist(new MembershipTable(user.getId(), group.getId()));
-        }
-
-        entityManager.flush();
-
-        transaction.commit();
     }
 }

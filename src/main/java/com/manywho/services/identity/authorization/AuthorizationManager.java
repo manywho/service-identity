@@ -13,8 +13,7 @@ import com.manywho.sdk.services.types.system.AuthorizationGroup;
 import com.manywho.sdk.services.types.system.AuthorizationUser;
 import com.manywho.sdk.services.values.ValueParser;
 import com.manywho.services.identity.ServiceConfiguration;
-import com.manywho.services.identity.users.User;
-import lombok.experimental.var;
+import lombok.val;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -68,7 +67,7 @@ public class AuthorizationManager {
 
                     // Check if the logged-in user is a member of any of the authorized groups for the flow
                     if (request.getAuthorization().hasGroups()) {
-                        for (var group : request.getAuthorization().getGroups()) {
+                        for (val group : request.getAuthorization().getGroups()) {
                             if (groups.contains(UUID.fromString(group.getAuthenticationId()))) {
                                 status = "200";
                             }
@@ -108,9 +107,9 @@ public class AuthorizationManager {
                     .map(group -> new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()))
                     .collect(Collectors.toList());
         } else {
-            var authorizationGroup = valueParser.asObject(request.getObjectData(), AuthorizationGroup.class);
+            val authorizationGroup = valueParser.asObject(request.getObjectData(), AuthorizationGroup.class);
 
-            var group = repository.findGroup(configuration, authorizationGroup.getId());
+            val group = repository.findGroup(configuration, authorizationGroup.getId());
             if (group != null) {
                 groups.add(new AuthorizationGroup(group.getId().toString(), group.getName(), group.getDescription()));
             }
@@ -136,9 +135,9 @@ public class AuthorizationManager {
                     .map(user -> new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()))
                     .collect(Collectors.toList());
         } else {
-            var authorizationUser = valueParser.asObject(request.getObjectData(), AuthorizationUser.class);
+            val authorizationUser = valueParser.asObject(request.getObjectData(), AuthorizationUser.class);
 
-            var user = repository.findUser(configuration, authorizationUser.getId());
+            val user = repository.findUser(configuration, authorizationUser.getId());
             if (user != null) {
                 users.add(new AuthorizationUser(user.getId().toString(), user.getFullName(), user.getEmail()));
             }
