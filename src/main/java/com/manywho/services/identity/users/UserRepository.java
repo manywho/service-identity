@@ -52,8 +52,6 @@ public class UserRepository {
                             .bind("group", group.getId())
                             .execute();
                 }
-
-                transaction.commit();
             });
         }
     }
