@@ -16,12 +16,9 @@ public class JdbiFactory {
 
                 String sslMode = configuration.isDatabaseSsl()
                         ? "require"
-                        : null;
+                        : "disable";
 
-                if(sslMode != null)
-                    url = String.format("jdbc:postgresql://%s:%d/%s?currentSchema=%s&sslmode=%s", configuration.getDatabaseHostname(), configuration.getDatabasePort(), configuration.getDatabaseName(), schema, sslMode);
-                else
-                    url = String.format("jdbc:postgresql://%s:%d/%s?currentSchema=%s", configuration.getDatabaseHostname(), configuration.getDatabasePort(), configuration.getDatabaseName(), schema);
+                url = String.format("jdbc:postgresql://%s:%d/%s?currentSchema=%s&sslmode=%s", configuration.getDatabaseHostname(), configuration.getDatabasePort(), configuration.getDatabaseName(), schema, sslMode);
                 break;
             default:
                 throw new RuntimeException("The database type " + configuration.getDatabaseType() + " is not supported");
