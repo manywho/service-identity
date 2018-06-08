@@ -194,6 +194,7 @@ public class UserRepository {
                 if (user.getPassword() != null) {
                     transaction.createUpdate("UPDATE \"User\" SET password = :password WHERE id = :id")
                             .bind("id", user.getId())
+                            .bind("password", user.getPassword())
                             .execute();
                 }
 
