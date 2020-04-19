@@ -8,6 +8,6 @@ public class Application {
         EmbeddedServer server = new UndertowServer();
         server.addModule(new ApplicationModule());
         server.setApplication(Application.class);
-        server.start("/api/identity/1");
+        server.start();
     }
 }
