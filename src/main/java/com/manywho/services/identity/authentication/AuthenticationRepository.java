@@ -18,12 +18,11 @@ public class AuthenticationRepository {
     public User findUserByEmail(ServiceConfiguration configuration, String email) {
         final String sql = "SELECT id, first_name, last_name, email, password, created_at, updated_at FROM \"User\" WHERE email = :email";
 
-        val user = jdbiFactory.create(configuration)
+        return jdbiFactory.create(configuration)
                 .withHandle(handle -> handle.createQuery(sql)
-                        .bind("email", email)
-                        .mapToBean(User.class)
-                        .findFirst());
-
-        return user.orElseThrow(() -> new RuntimeException("Unable to find a user with those credentials"));
+                    .bind("email", email)
+                    .mapToBean(User.class)
+                    .findFirst()
+                    .orElse(null));
     }
 }
